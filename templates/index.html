@@ -55,27 +55,26 @@
 </head>
 <body>
     <div class="pedal-container">
-        <h1>🎸 SEED</h1>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" required><br>
-
-            <label for="genre">Choose a genre:</label><br>
-            <select name="genre" id="genre">
-                <option value="pop">Pop</option>
-                <option value="rock">Rock</option>
-                <option value="lofi">Lo-Fi</option>
-                <option value="country">Country</option>
-                <option value="hiphop">Hip Hop</option>
-            </select><br>
-
-            <label for="structure">Song structure:</label><br>
-            <select name="structure" id="structure">
-                <option value="verse-chorus-bridge">Verse / Chorus / Bridge</option>
-                <option value="chorus-only">Chorus Only</option>
-                <option value="build">Build-Up Drop Outro</option>
-            </select><br>
-
-            <input class="pedal-button" type="submit" value="Upload & Generate">
+        <h1>SEED</h1>
+        <form method="post" enctype="multipart/form-data">
+          <input type="file" name="file" required>
+          
+          <label for="genre">Genre:</label>
+          <select name="genre" id="genre">
+            <option value="rock">Rock</option>
+            <option value="pop">Pop</option>
+            <option value="lofi">Lo-fi</option>
+            <option value="electronic">Electronic</option>
+          </select>
+        
+          <label for="structure">Structure:</label>
+          <select name="structure" id="structure">
+            <option value="verse-chorus">Verse-Chorus</option>
+            <option value="aaba">AABA</option>
+            <option value="through-composed">Through-Composed</option>
+          </select>
+        
+          <input type="submit" value="Upload">
         </form>
     </div>
 </body>

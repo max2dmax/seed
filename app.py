@@ -49,15 +49,30 @@ def home():
 def upload_file():
     if request.method == 'POST':
         if 'file' not in request.files:
-            return 'No file uploaded 😤'
+            return 'No file part 🫠'
         file = request.files['file']
         if file.filename == '':
-            return 'File name empty 😶'
+            return 'No selected file 🫥'
         if file and allowed_file(file.filename):
-            url = upload_to_s3(file, file.filename)
-            return f'✅ Uploaded to S3! <a href="{url}">{url}</a>'
+            # Save file to S3
+            filename = file.filename
+            url = upload_to_s3(file, filename)
+
+            # 👇 Grab dropdown values
+            selected_genre = request.form.get('genre')
+            selected_structure = request.form.get('structure')
+
+            # 🎶 Log or use this data however you like
+            print(f"Genre: {selected_genre}, Structure: {selected_structure}")
+            
+            return f'''
+            ✅ File uploaded: {filename}<br>
+            🎵 Genre: {selected_genre}<br>
+            🧱 Structure: {selected_structure}<br>
+            🌐 URL: <a href="{url}" target="_blank">{url}</a>
+            '''
         else:
-            return 'Invalid file type 🚫'
+            return '🚫 File type not allowed'
     return render_template('upload.html')
 
 # Run the app
