@@ -66,10 +66,10 @@ def upload_file():
             print(f"Genre: {selected_genre}, Structure: {selected_structure}")
             
             return f'''
-            ✅ File uploaded: {filename}<br>
-            🎵 Genre: {selected_genre}<br>
-            🧱 Structure: {selected_structure}<br>
-            🌐 URL: <a href="{url}" target="_blank">{url}</a>
+             File uploaded: {filename}<br>
+             Genre: {selected_genre}<br>
+             Structure: {selected_structure}<br>
+             URL: <a href="{url}" target="_blank">{url}</a>
             '''
         else:
             return '🚫 File type not allowed'
