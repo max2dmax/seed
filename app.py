@@ -105,6 +105,7 @@ def upload_file():
 # History route
 @app.route('/history')
 def upload_history():
+    print(f"🧠 Using DB located at: {os.path.abspath(DB_FILE)}")
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.execute('SELECT filename, url, genre, structure, timestamp FROM uploads ORDER BY timestamp DESC')
         uploads = cursor.fetchall()
