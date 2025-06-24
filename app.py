@@ -130,11 +130,12 @@ def upload_file():
         if file.filename == '':
             return 'No selected file 🫥'
         if file and allowed_file(file.filename):
-            # Save file to S3
+            # Save file locally first
             filename = file.filename
-            file.stream.seek(0)  # Rewind before sending to S3
-            url = upload_to_s3(file, filename)
-            file.stream.seek(0)  # Rewind again before saving locally
+            local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(local_path)
+            with open(local_path, 'rb') as f:
+                url = upload_to_s3(f, filename)
 
             # 👇 Grab dropdown values
             selected_genre = request.form.get('genre')
@@ -177,8 +178,6 @@ def upload_file():
             except Exception as e:
                 app.logger.error(f"🧨 DB Error: {e}")
             
-            local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(local_path)
 
             generated_path = generate_music(local_path, selected_genre, selected_structure)
 
