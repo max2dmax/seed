@@ -132,6 +132,7 @@ def upload_file():
         if file and allowed_file(file.filename):
             # Save file to S3
             filename = file.filename
+            file.stream.seek(0)  # Rewind before sending to S3
             url = upload_to_s3(file, filename)
 
             # 👇 Grab dropdown values
@@ -176,6 +177,7 @@ def upload_file():
                 app.logger.error(f"🧨 DB Error: {e}")
             
             local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.stream.seek(0)  # Rewind before saving locally
             file.save(local_path)
 
             generated_path = generate_music(local_path, selected_genre, selected_structure)
