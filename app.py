@@ -20,20 +20,12 @@ s3 = boto3.client('s3',
     region_name=os.getenv("AWS_REGION")
 )
 
-def upload_to_s3(file, filename):
-    s3.upload_fileobj(
-        file,
-        os.getenv("S3_BUCKET_NAME"),
-        filename,
-        ExtraArgs={
-            'ContentType': file.content_type
-        }
-    )
-    url = f"https://{os.getenv('S3_BUCKET_NAME')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{filename}"
-    return url
-
 def generate_music(audio_path, genre, structure):
-    app.logger.debug("🎧 Starting music generation")
+    if os.getenv("USE_LOCAL_MUSICGEN", "false").lower() != "true":
+        app.logger.debug("🎧 Skipping local music generation (USE_LOCAL_MUSICGEN not true)")
+        return None
+
+    app.logger.debug("🎧 Starting local music generation")
     try:
         musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
         musicgen_model.set_generation_params(duration=30)
