@@ -1,2 +1,7 @@
 .eng
 .DS_Store
+uploads/
+*.wav
+uploads.db
+__pycache__/
+*.pyc
