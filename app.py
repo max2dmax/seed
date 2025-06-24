@@ -82,11 +82,15 @@ def upload_file():
             print(f"Genre: {selected_genre}, Structure: {selected_structure}")
             
             # 🗃 Save to SQLite DB
-            with sqlite3.connect(DB_FILE) as conn:
-                conn.execute('''
-                    INSERT INTO uploads (filename, url, genre, structure, timestamp)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
+            try:
+                print("🔥 Attempting to insert into DB!")
+                with sqlite3.connect(DB_FILE) as conn:
+                    conn.execute('''
+                        INSERT INTO uploads (filename, url, genre, structure, timestamp)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
+            except Exception as e:
+                print(f"🧨 DB Error: {e}")
             
             return f'''
              File uploaded: {filename}<br>
