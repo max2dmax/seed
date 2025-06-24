@@ -98,10 +98,6 @@ def upload_file():
             return '🚫 File type not allowed'
     return render_template('upload.html')
 
-# Run the app
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
 # History route
 @app.route('/history')
 def upload_history():
@@ -109,3 +105,8 @@ def upload_history():
         cursor = conn.execute('SELECT filename, url, genre, structure, timestamp FROM uploads ORDER BY timestamp DESC')
         uploads = cursor.fetchall()
     return render_template('history.html', uploads=uploads)
+
+# Run the app
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
