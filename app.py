@@ -21,10 +21,7 @@ def upload_to_s3(file, filename):
     s3.upload_fileobj(
         file,
         os.getenv("S3_BUCKET_NAME"),
-        filename,
-        ExtraArgs={
-            'ContentType': file.content_type
-        }
+        filename
     )
     url = f"https://{os.getenv('S3_BUCKET_NAME')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{filename}"
     return url
