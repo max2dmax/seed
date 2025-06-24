@@ -102,3 +102,10 @@ def upload_file():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+# History route
+@app.route('/history')
+def upload_history():
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.execute('SELECT filename, url, genre, structure, timestamp FROM uploads ORDER BY timestamp DESC')
+        uploads = cursor.fetchall()
+    return render_template('history.html', uploads=uploads)
