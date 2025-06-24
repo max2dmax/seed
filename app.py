@@ -7,7 +7,6 @@ import sqlite3
 import logging
 import psycopg2
 from urllib.parse import urlparse
-from audiocraft.models import MusicGen
 import torchaudio
 import torch
 logging.basicConfig(level=logging.DEBUG)
@@ -27,6 +26,7 @@ def generate_music(audio_path, genre, structure):
 
     app.logger.debug("🎧 Starting local music generation")
     try:
+        from audiocraft.models import MusicGen
         musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
         musicgen_model.set_generation_params(duration=30)
         prompt = f"{genre} instrumental in {structure} structure"
