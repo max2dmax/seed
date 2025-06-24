@@ -7,6 +7,8 @@ import sqlite3
 import logging
 import psycopg2
 from urllib.parse import urlparse
+from audiocraft.models import MusicGen
+import torchaudio
 logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
@@ -29,12 +31,21 @@ def upload_to_s3(file, filename):
     url = f"https://{os.getenv('S3_BUCKET_NAME')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{filename}"
     return url
 
+def generate_music(audio_path, genre, structure):
+    musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
+    musicgen_model.set_generation_params(duration=30)
+    prompt = f"{genre} instrumental in {structure} structure"
+    wav_output = musicgen_model.generate_with_chroma(audio_path, prompt)
+    output_path = os.path.join("static", "generated_output.wav")
+    torchaudio.save(output_path, wav_output[0].unsqueeze(0), 32000)
+    return output_path
+
 # Create Flask app
 app = Flask(__name__)
 
 # Setup upload folder and allowed extensions
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'mp3', 'wav', 'm4a', 'flac', 'aiff'}
+ALLOWED_EXTENSIONS = {'mp3', 'wav', 'm4a', 'flac', 'aif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure folder exists
@@ -135,11 +146,17 @@ def upload_file():
             except Exception as e:
                 app.logger.error(f"🧨 DB Error: {e}")
             
+            local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(local_path)
+
+            generated_path = generate_music(local_path, selected_genre, selected_structure)
+
             return f'''
              File uploaded: {filename}<br>
              Genre: {selected_genre}<br>
              Structure: {selected_structure}<br>
-             URL: <a href="{url}" target="_blank">{url}</a>
+             Original URL: <a href="{url}" target="_blank">{url}</a><br>
+             Generated Track Preview: <audio controls><source src="/{generated_path}" type="audio/wav">Your browser does not support the audio element.</audio>
             '''
         else:
             return '🚫 File type not allowed'
