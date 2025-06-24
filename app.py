@@ -2,6 +2,8 @@ from flask import Flask, request, redirect, url_for, render_template
 import os
 import boto3
 from dotenv import load_dotenv
+from datetime import datetime
+import sqlite3
 
 load_dotenv()
 
@@ -34,6 +36,20 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Ensure folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Initialize SQLite DB
+DB_FILE = 'uploads.db'
+with sqlite3.connect(DB_FILE) as conn:
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS uploads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            url TEXT NOT NULL,
+            genre TEXT,
+            structure TEXT,
+            timestamp TEXT
+        )
+    ''')
+
 # Helper function
 def allowed_file(filename):
     return '.' in filename and \
@@ -64,6 +80,13 @@ def upload_file():
 
             # 🎶 Log or use this data however you like
             print(f"Genre: {selected_genre}, Structure: {selected_structure}")
+            
+            # 🗃 Save to SQLite DB
+            with sqlite3.connect(DB_FILE) as conn:
+                conn.execute('''
+                    INSERT INTO uploads (filename, url, genre, structure, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
             
             return f'''
              File uploaded: {filename}<br>
