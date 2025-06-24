@@ -94,10 +94,13 @@ def upload_file():
                 app.logger.debug(f"➡️ timestamp: {datetime.now().isoformat()}")
                 
                 with sqlite3.connect(DB_FILE) as conn:
-                    conn.execute('''
+                    cursor = conn.cursor()
+                    cursor.execute('''
                         INSERT INTO uploads (filename, url, genre, structure, timestamp)
                         VALUES (?, ?, ?, ?, ?)
                     ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
+                    conn.commit()
+                app.logger.debug("✅ Upload record successfully inserted into database!")
             except Exception as e:
                 app.logger.error(f"🧨 DB Error: {e}")
             
