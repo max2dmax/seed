@@ -7,8 +7,6 @@ import sqlite3
 import logging
 import psycopg2
 from urllib.parse import urlparse
-import torchaudio
-import torch
 logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
@@ -20,13 +18,28 @@ s3 = boto3.client('s3',
 )
 
 def generate_music(audio_path, genre, structure):
+    """
+    Generates music using MusicGen if running locally with AI dependencies.
+    On the cloud (Render/etc.), skips AI generation.
+
+    Two Modes:
+    1. Local (USE_LOCAL_MUSICGEN=true): Runs AI music generation (requires audiocraft, torch, etc.)
+    2. Cloud/Prod: Skips AI music generation, just returns None.
+    """
     if os.getenv("USE_LOCAL_MUSICGEN", "false").lower() != "true":
         app.logger.debug("🎧 Skipping local music generation (USE_LOCAL_MUSICGEN not true)")
         return None
 
     app.logger.debug("🎧 Starting local music generation")
     try:
-        from audiocraft.models import MusicGen
+        try:
+            from audiocraft.models import MusicGen
+            import torch
+            import torchaudio
+        except ImportError:
+            app.logger.error("❌ MusicGen/audiocraft not installed! Skipping music generation.")
+            return None
+
         musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
         musicgen_model.set_generation_params(duration=30)
         prompt = f"{genre} instrumental in {structure} structure"
@@ -117,8 +130,8 @@ def upload_file():
             app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}")
             
             # Log torch device
-            device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
-            app.logger.debug(f"🚀 Torch is using device: {device}")
+            # device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
+            # app.logger.debug(f"🚀 Torch is using device: {device}")
             
             # 🗃 Save to PostgreSQL DB
             try:
