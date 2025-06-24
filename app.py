@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from datetime import datetime
 import sqlite3
 import logging
+import psycopg2
+from urllib.parse import urlparse
 logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
@@ -38,19 +40,38 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Ensure folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Initialize SQLite DB
-DB_FILE = 'uploads.db'
-with sqlite3.connect(DB_FILE) as conn:
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS uploads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            url TEXT NOT NULL,
-            genre TEXT,
-            structure TEXT,
-            timestamp TEXT
-        )
-    ''')
+DATABASE_URL = os.getenv('DATABASE_URL')  # Add this to your Render env variables
+
+def init_db():
+    result = urlparse(DATABASE_URL)
+    username = result.username
+    password = result.password
+    database = result.path[1:]
+    hostname = result.hostname
+    port = result.port
+
+    conn = psycopg2.connect(
+        database=database,
+        user=username,
+        password=password,
+        host=hostname,
+        port=port
+    )
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS uploads (
+                    id SERIAL PRIMARY KEY,
+                    filename TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    genre TEXT,
+                    structure TEXT,
+                    timestamp TEXT
+                )
+            ''')
+    conn.close()
+
+init_db()
 
 # Helper function
 def allowed_file(filename):
@@ -84,7 +105,7 @@ def upload_file():
             # 🎶 Log or use this data however you like
             app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}")
             
-            # 🗃 Save to SQLite DB
+            # 🗃 Save to PostgreSQL DB
             try:
                 app.logger.debug("🔥 Attempting to insert into DB!")
                 app.logger.debug(f"➡️ filename: {filename}")
@@ -92,16 +113,25 @@ def upload_file():
                 app.logger.debug(f"➡️ genre: {selected_genre}")
                 app.logger.debug(f"➡️ structure: {selected_structure}")
                 app.logger.debug(f"➡️ timestamp: {datetime.now().isoformat()}")
-                
-                with sqlite3.connect(DB_FILE) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO uploads (filename, url, genre, structure, timestamp)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
-                    conn.commit()
+
+                result = urlparse(DATABASE_URL)
+                conn = psycopg2.connect(
+                    dbname=result.path[1:],
+                    user=result.username,
+                    password=result.password,
+                    host=result.hostname,
+                    port=result.port
+                )
+                with conn:
+                    with conn.cursor() as cur:
+                        cur.execute('''
+                            INSERT INTO uploads (filename, url, genre, structure, timestamp)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
+                conn.close()
+
                 app.logger.debug("✅ Upload record successfully inserted into database!")
-                app.logger.debug(f"📍 DB path: {os.path.abspath(DB_FILE)}")
+                app.logger.debug(f"📍 DB URL: {DATABASE_URL}")
             except Exception as e:
                 app.logger.error(f"🧨 DB Error: {e}")
             
@@ -118,10 +148,20 @@ def upload_file():
 # History route
 @app.route('/history')
 def upload_history():
-    app.logger.debug(f"🧠 Using DB located at: {os.path.abspath(DB_FILE)}")
-    with sqlite3.connect(DB_FILE) as conn:
-        cursor = conn.execute('SELECT filename, url, genre, structure, timestamp FROM uploads ORDER BY timestamp DESC')
-        uploads = cursor.fetchall()
+    app.logger.debug(f"🧠 Using DB URL: {DATABASE_URL}")
+    result = urlparse(DATABASE_URL)
+    conn = psycopg2.connect(
+        dbname=result.path[1:],
+        user=result.username,
+        password=result.password,
+        host=result.hostname,
+        port=result.port
+    )
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute('SELECT filename, url, genre, structure, timestamp FROM uploads ORDER BY timestamp DESC')
+            uploads = cur.fetchall()
+    conn.close()
     return render_template('history.html', uploads=uploads)
 
 # Run the app
