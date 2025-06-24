@@ -89,6 +89,7 @@ def upload_file():
                         INSERT INTO uploads (filename, url, genre, structure, timestamp)
                         VALUES (?, ?, ?, ?, ?)
                     ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
+                    conn.commit()  # <--- Force the DB write
             except Exception as e:
                 print(f"🧨 DB Error: {e}")
             
