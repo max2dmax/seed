@@ -1,5 +1,6 @@
 from flask import Flask, request, redirect, url_for, render_template
 import os
+import sys
 import boto3
 from dotenv import load_dotenv
 from datetime import datetime
@@ -35,12 +36,15 @@ def generate_music(audio_path, genre, structure):
     1. Local (USE_LOCAL_MUSICGEN=true): Runs AI music generation (requires audiocraft, torch, etc.)
     2. Cloud/Prod: Skips AI music generation, just returns None.
     """
-    # ✅ Toggle local MusicGen with USE_LOCAL_MUSICGEN=true in your .env
-    if os.getenv("USE_LOCAL_MUSICGEN", "false").lower() != "true":
-        app.logger.debug("🎧 Skipping local music generation (USE_LOCAL_MUSICGEN not true)")
+    # TEMP: Hardcoded override. Set to False when deploying to cloud.
+    USE_LOCAL_MUSICGEN = True
+    if not USE_LOCAL_MUSICGEN:
+        app.logger.debug("🎧 Skipping local music generation (USE_LOCAL_MUSICGEN is False)")
         return None
 
     app.logger.debug("🎧 Starting local music generation")
+    app.logger.debug(f"💻 Python executable: {sys.executable}")
+    app.logger.debug(f"📦 Python path: {sys.path}")
     try:
         try:
             from audiocraft.models import MusicGen
