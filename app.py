@@ -101,6 +101,7 @@ def upload_file():
                     ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
                     conn.commit()
                 app.logger.debug("✅ Upload record successfully inserted into database!")
+                app.logger.debug(f"📍 DB path: {os.path.abspath(DB_FILE)}")
             except Exception as e:
                 app.logger.error(f"🧨 DB Error: {e}")
             
