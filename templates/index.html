@@ -56,7 +56,7 @@
 <body>
     <div class="pedal-container">
         <h1>SEED</h1>
-        <form method="post" action="/upload" enctype="multipart/form-data">
+        <form method="post" action="/upload" enctype="multipart/form-data" id="upload-form">
           <input type="file" name="file" required>
           
           <label for="genre">Genre:</label>
@@ -74,8 +74,37 @@
             <option value="through-composed">Through-Composed</option>
           </select>
         
-          <input type="submit" value="Upload">
+          <input type="submit" class="pedal-button" value="Upload">
         </form>
+
+        <div id="processing-indicator" style="margin-top: 1em; display: none;">
+          <div style="width: 20px; height: 20px; background-color: red; border-radius: 50%; margin: 0 auto; box-shadow: 0 0 10px red;"></div>
+          <p style="font-size: 0.9em; margin-top: 0.5em;">Processing...</p>
+        </div>
+
+        <div id="preview-container" style="margin-top: 2em; display: none;">
+          <h3>Preview</h3>
+          <audio id="audio-preview" controls style="width: 100%; margin-top: 1em;"></audio>
+        </div>
     </div>
+<script>
+  const form = document.getElementById('upload-form');
+  const processing = document.getElementById('processing-indicator');
+  const previewContainer = document.getElementById('preview-container');
+  const audioPreview = document.getElementById('audio-preview');
+
+  form.addEventListener('submit', () => {
+    processing.style.display = 'block';
+    previewContainer.style.display = 'none';
+  });
+
+  // In a real implementation, you'd fetch this preview after server-side processing
+  // This is just a placeholder for demo purposes
+  function showPreview(audioUrl) {
+    processing.style.display = 'none';
+    audioPreview.src = audioUrl;
+    previewContainer.style.display = 'block';
+  }
+</script>
 </body>
 </html>
