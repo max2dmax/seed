@@ -23,7 +23,6 @@ def upload_to_s3(file, filename):
         os.getenv("S3_BUCKET_NAME"),
         filename,
         ExtraArgs={
-            'ACL': 'public-read',
             'ContentType': file.content_type
         }
     )
