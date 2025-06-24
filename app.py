@@ -9,6 +9,7 @@ import psycopg2
 from urllib.parse import urlparse
 from audiocraft.models import MusicGen
 import torchaudio
+import torch
 logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
@@ -122,6 +123,10 @@ def upload_file():
 
             # 🎶 Log or use this data however you like
             app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}")
+            
+            # Log torch device
+            device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
+            app.logger.debug(f"🚀 Torch is using device: {device}")
             
             # 🗃 Save to PostgreSQL DB
             try:
