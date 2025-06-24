@@ -4,6 +4,8 @@ import boto3
 from dotenv import load_dotenv
 from datetime import datetime
 import sqlite3
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
 
@@ -63,6 +65,7 @@ def home():
 # Upload route
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    app.logger.debug("📥 /upload route triggered")
     if request.method == 'POST':
         if 'file' not in request.files:
             return 'No file part 🫠'
@@ -79,16 +82,16 @@ def upload_file():
             selected_structure = request.form.get('structure')
 
             # 🎶 Log or use this data however you like
-            print(f"Genre: {selected_genre}, Structure: {selected_structure}")
+            app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}")
             
             # 🗃 Save to SQLite DB
             try:
-                print("🔥 Attempting to insert into DB!")
-                print(f"➡️ filename: {filename}")
-                print(f"➡️ url: {url}")
-                print(f"➡️ genre: {selected_genre}")
-                print(f"➡️ structure: {selected_structure}")
-                print(f"➡️ timestamp: {datetime.now().isoformat()}")
+                app.logger.debug("🔥 Attempting to insert into DB!")
+                app.logger.debug(f"➡️ filename: {filename}")
+                app.logger.debug(f"➡️ url: {url}")
+                app.logger.debug(f"➡️ genre: {selected_genre}")
+                app.logger.debug(f"➡️ structure: {selected_structure}")
+                app.logger.debug(f"➡️ timestamp: {datetime.now().isoformat()}")
                 
                 with sqlite3.connect(DB_FILE) as conn:
                     conn.execute('''
@@ -96,7 +99,7 @@ def upload_file():
                         VALUES (?, ?, ?, ?, ?)
                     ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
             except Exception as e:
-                print(f"🧨 DB Error: {e}")
+                app.logger.error(f"🧨 DB Error: {e}")
             
             return f'''
              File uploaded: {filename}<br>
@@ -111,7 +114,7 @@ def upload_file():
 # History route
 @app.route('/history')
 def upload_history():
-    print(f"🧠 Using DB located at: {os.path.abspath(DB_FILE)}")
+    app.logger.debug(f"🧠 Using DB located at: {os.path.abspath(DB_FILE)}")
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.execute('SELECT filename, url, genre, structure, timestamp FROM uploads ORDER BY timestamp DESC')
         uploads = cursor.fetchall()
