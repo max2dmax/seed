@@ -30,7 +30,7 @@ app = Flask(__name__)
 
 # Setup upload folder and allowed extensions
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'mp3', 'wav', 'm4a', 'flac'}
+ALLOWED_EXTENSIONS = {'mp3', 'wav', 'm4a', 'flac', 'aiff'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure folder exists
