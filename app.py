@@ -32,13 +32,20 @@ def upload_to_s3(file, filename):
     return url
 
 def generate_music(audio_path, genre, structure):
-    musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
-    musicgen_model.set_generation_params(duration=30)
-    prompt = f"{genre} instrumental in {structure} structure"
-    wav_output = musicgen_model.generate_with_chroma(audio_path, prompt)
-    output_path = os.path.join("static", "generated_output.wav")
-    torchaudio.save(output_path, wav_output[0].unsqueeze(0), 32000)
-    return output_path
+    app.logger.debug("🎧 Starting music generation")
+    try:
+        musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
+        musicgen_model.set_generation_params(duration=30)
+        prompt = f"{genre} instrumental in {structure} structure"
+        app.logger.debug(f"🎛 Prompt: {prompt}")
+        wav_output = musicgen_model.generate_with_chroma(audio_path, prompt)
+        output_path = os.path.join("static", "generated_output.wav")
+        torchaudio.save(output_path, wav_output[0].unsqueeze(0), 32000)
+        app.logger.debug(f"✅ Generated track saved to: {output_path}")
+        return output_path
+    except Exception as e:
+        app.logger.error(f"❌ Music generation failed: {e}")
+        return None
 
 # Create Flask app
 app = Flask(__name__)
