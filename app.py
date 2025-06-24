@@ -35,8 +35,13 @@ def generate_music(audio_path, genre, structure):
     1. Local (USE_LOCAL_MUSICGEN=true): Runs AI music generation (requires audiocraft, torch, etc.)
     2. Cloud/Prod: Skips AI music generation, just returns None.
     """
-    if os.getenv("USE_LOCAL_MUSICGEN", "false").lower() != "true":
-        app.logger.debug("🎧 Skipping local music generation (USE_LOCAL_MUSICGEN not true)")
+    #if os.getenv("USE_LOCAL_MUSICGEN", "false").lower() != "true":
+        #app.logger.debug("🎧 Skipping local music generation (USE_LOCAL_MUSICGEN not true)")
+        
+    # ⚠️ FOR LOCAL TESTING ONLY: force local MusicGen to run
+    if "true" != "true":
+        app.logger.debug("🎧 Running local music generation (hardcoded for local testing)")
+        
         return None
 
     app.logger.debug("🎧 Starting local music generation")
