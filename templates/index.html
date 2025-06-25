@@ -56,26 +56,58 @@
 <body>
     <div class="pedal-container">
         <h1>SEED</h1>
-        <form method="post" action="/upload" enctype="multipart/form-data" id="upload-form">
-          <input type="file" name="file" required>
+        <label for="mode">Generation Mode:</label>
+        <select name="mode" id="mode" onchange="toggleForm()">
+          <option value="audio">Upload Audio</option>
+          <option value="prompt">Generate from Prompt</option>
+        </select>
+
+        <div id="audio-form">
+          <form method="post" action="/upload" enctype="multipart/form-data" id="upload-form">
+            <input type="file" name="file" required>
+            
+            <label for="genre">Genre:</label>
+            <select name="genre" id="genre">
+              <option value="rock">Rock</option>
+              <option value="pop">Pop</option>
+              <option value="lofi">Lo-fi</option>
+              <option value="electronic">Electronic</option>
+            </select>
           
-          <label for="genre">Genre:</label>
-          <select name="genre" id="genre">
-            <option value="rock">Rock</option>
-            <option value="pop">Pop</option>
-            <option value="lofi">Lo-fi</option>
-            <option value="electronic">Electronic</option>
-          </select>
+            <label for="structure">Structure:</label>
+            <select name="structure" id="structure">
+              <option value="verse-chorus">Verse-Chorus</option>
+              <option value="aaba">AABA</option>
+              <option value="through-composed">Through-Composed</option>
+            </select>
+          
+            <input type="submit" class="pedal-button" value="Upload">
+          </form>
+        </div>
+
+        <div id="prompt-form" style="display:none;">
+          <form method="post" action="/generate" id="prompt-submit-form">
+            <label for="text-prompt">Prompt:</label>
+            <input type="text" name="prompt" id="text-prompt" required>
         
-          <label for="structure">Structure:</label>
-          <select name="structure" id="structure">
-            <option value="verse-chorus">Verse-Chorus</option>
-            <option value="aaba">AABA</option>
-            <option value="through-composed">Through-Composed</option>
-          </select>
-        
-          <input type="submit" class="pedal-button" value="Upload">
-        </form>
+            <label for="genre-prompt">Genre:</label>
+            <select name="genre" id="genre-prompt">
+              <option value="rock">Rock</option>
+              <option value="pop">Pop</option>
+              <option value="lofi">Lo-fi</option>
+              <option value="electronic">Electronic</option>
+            </select>
+
+            <label for="structure-prompt">Structure:</label>
+            <select name="structure" id="structure-prompt">
+              <option value="verse-chorus">Verse-Chorus</option>
+              <option value="aaba">AABA</option>
+              <option value="through-composed">Through-Composed</option>
+            </select>
+
+            <input type="submit" class="pedal-button" value="Generate">
+          </form>
+        </div>
 
         <div id="processing-indicator" style="margin-top: 1em; display: none;">
           <div style="width: 20px; height: 20px; background-color: red; border-radius: 50%; margin: 0 auto; box-shadow: 0 0 10px red;"></div>
@@ -97,6 +129,22 @@
     processing.style.display = 'block';
     previewContainer.style.display = 'none';
   });
+
+  // Toggle between forms
+  function toggleForm() {
+    const mode = document.getElementById('mode').value;
+    document.getElementById('audio-form').style.display = mode === 'audio' ? 'block' : 'none';
+    document.getElementById('prompt-form').style.display = mode === 'prompt' ? 'block' : 'none';
+  }
+
+  // Show loading indicator for prompt form
+  const promptForm = document.getElementById('prompt-submit-form');
+  if (promptForm) {
+    promptForm.addEventListener('submit', () => {
+      processing.style.display = 'block';
+      previewContainer.style.display = 'none';
+    });
+  }
 
   // In a real implementation, you'd fetch this preview after server-side processing
   // This is just a placeholder for demo purposes
