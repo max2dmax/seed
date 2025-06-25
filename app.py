@@ -193,6 +193,17 @@ def upload_file():
         file = request.files['file']
         if file.filename == '':
             return 'No selected file 🫥'
+
+        # 👇 Grab dropdown values
+        selected_genre = request.form.get('genre')
+        selected_structure = request.form.get('structure')
+
+        # New form fields for mode and prompt
+        mode = request.form.get('mode')
+        if mode not in ['audio2audio', 'prompt2audio']:
+            mode = 'audio2audio'
+        text_prompt = request.form.get('text_prompt')
+
         if file and allowed_file(file.filename):
             # Save file locally first
             filename = file.filename
@@ -200,67 +211,66 @@ def upload_file():
             file.save(local_path)
             with open(local_path, 'rb') as f:
                 url = upload_to_s3(f, filename)
-
-            # 👇 Grab dropdown values
-            selected_genre = request.form.get('genre')
-            selected_structure = request.form.get('structure')
-
-            # New form fields for mode and prompt
-            mode = request.form.get('mode')
-            if mode not in ['audio2audio', 'prompt2audio']:
-                mode = 'audio2audio'
-            text_prompt = request.form.get('text_prompt')
-
-            # 🎶 Log or use this data however you like
-            app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}, Mode: {mode}, Text Prompt: {text_prompt}")
-            
-            # Log torch device
-            # device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
-            # app.logger.debug(f"🚀 Torch is using device: {device}")
-            
-            # 🗃 Save to PostgreSQL DB
-            try:
-                app.logger.debug("🔥 Attempting to insert into DB!")
-                app.logger.debug(f"➡️ filename: {filename}")
-                app.logger.debug(f"➡️ url: {url}")
-                app.logger.debug(f"➡️ genre: {selected_genre}")
-                app.logger.debug(f"➡️ structure: {selected_structure}")
-                app.logger.debug(f"➡️ timestamp: {datetime.now().isoformat()}")
-
-                result = urlparse(DATABASE_URL)
-                conn = psycopg2.connect(
-                    dbname=result.path[1:],
-                    user=result.username,
-                    password=result.password,
-                    host=result.hostname,
-                    port=result.port
-                )
-                with conn:
-                    with conn.cursor() as cur:
-                        cur.execute('''
-                            INSERT INTO uploads (filename, url, genre, structure, timestamp)
-                            VALUES (%s, %s, %s, %s, %s)
-                        ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
-                conn.close()
-
-                app.logger.debug("✅ Upload record successfully inserted into database!")
-                app.logger.debug(f"📍 DB URL: {DATABASE_URL}")
-            except Exception as e:
-                app.logger.error(f"🧨 DB Error: {e}")
-            
-
-            generated_path = generate_music(local_path, selected_genre, selected_structure, mode=mode, text_prompt=text_prompt)
-
-            return f'''
-             File uploaded: {filename}<br>
-             Genre: {selected_genre}<br>
-             Structure: {selected_structure}<br>
-             Mode: {mode}<br>
-             Original URL: <a href="{url}" target="_blank">{url}</a><br>
-             Generated Track Preview: <audio controls><source src="/{generated_path}" type="audio/wav">Your browser does not support the audio element.</audio>
-            '''
         else:
-            return '🚫 File type not allowed'
+            # If prompt2audio mode, fake the file upload
+            if mode == 'prompt2audio':
+                filename = f"prompt_{datetime.now().timestamp()}.txt"
+                local_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                with open(local_path, 'w') as f:
+                    f.write(text_prompt or "unknown prompt")
+                url = "N/A"
+            else:
+                return '🚫 File type not allowed'
+
+        # 🎶 Log or use this data however you like
+        app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}, Mode: {mode}, Text Prompt: {text_prompt}")
+        
+        # Log torch device
+        # device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
+        # app.logger.debug(f"🚀 Torch is using device: {device}")
+        
+        # 🗃 Save to PostgreSQL DB
+        try:
+            app.logger.debug("🔥 Attempting to insert into DB!")
+            app.logger.debug(f"➡️ filename: {filename}")
+            app.logger.debug(f"➡️ url: {url}")
+            app.logger.debug(f"➡️ genre: {selected_genre}")
+            app.logger.debug(f"➡️ structure: {selected_structure}")
+            app.logger.debug(f"➡️ timestamp: {datetime.now().isoformat()}")
+
+            result = urlparse(DATABASE_URL)
+            conn = psycopg2.connect(
+                dbname=result.path[1:],
+                user=result.username,
+                password=result.password,
+                host=result.hostname,
+                port=result.port
+            )
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute('''
+                        INSERT INTO uploads (filename, url, genre, structure, timestamp)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (filename, url, selected_genre, selected_structure, datetime.now().isoformat()))
+            conn.close()
+
+            app.logger.debug("✅ Upload record successfully inserted into database!")
+            app.logger.debug(f"📍 DB URL: {DATABASE_URL}")
+        except Exception as e:
+            app.logger.error(f"🧨 DB Error: {e}")
+        
+
+        # Now call generate_music using the consistent params
+        generated_path = generate_music(local_path, selected_genre, selected_structure, mode=mode, text_prompt=text_prompt)
+
+        return f'''
+         File uploaded: {filename}<br>
+         Genre: {selected_genre}<br>
+         Structure: {selected_structure}<br>
+         Mode: {mode}<br>
+         Original URL: <a href="{url}" target="_blank">{url}</a><br>
+         Generated Track Preview: <audio controls><source src="/{generated_path}" type="audio/wav">Your browser does not support the audio element.</audio>
+        '''
     return render_template('upload.html')
 
 # History route
