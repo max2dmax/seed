@@ -24,7 +24,7 @@ for i in range(total_steps + 1):
 print()  # Move to the next line after progress bar
 
 model = MusicGen.get_pretrained('facebook/musicgen-large')
-model.set_generation_params(duration=10)
+model.set_generation_params(duration=120)
 
 generated = model.generate(descriptions=["a chill indie pop song with acoustic guitar and dreamy synths"])
 print("\n✅ Generation complete!")
