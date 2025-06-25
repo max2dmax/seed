@@ -8,6 +8,7 @@ import sqlite3
 import logging
 import psycopg2
 from urllib.parse import urlparse
+import subprocess
 logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
@@ -54,13 +55,42 @@ def generate_music(audio_path, genre, structure):
             app.logger.error("❌ MusicGen/audiocraft not installed! Skipping music generation.")
             return None
 
+        # Convert m4a to wav using ffmpeg if needed
+        if audio_path.endswith(".m4a"):
+            converted_path = audio_path.replace(".m4a", "_converted.wav")
+            ffmpeg_cmd = f"ffmpeg -y -i \"{audio_path}\" -ar 32000 \"{converted_path}\""
+            app.logger.debug(f"🔁 Converting m4a to wav: {ffmpeg_cmd}")
+            result = os.system(ffmpeg_cmd)
+            if result != 0:
+                app.logger.error("❌ FFmpeg conversion failed.")
+                return None
+            audio_path = converted_path
+
+        wav_tensor, sr = torchaudio.load(audio_path)
         musicgen_model = MusicGen.get_pretrained('facebook/musicgen-melody')
         musicgen_model.set_generation_params(duration=30)
         prompt = f"{genre} instrumental in {structure} structure"
         app.logger.debug(f"🎛 Prompt: {prompt}")
-        wav_output = musicgen_model.generate_with_chroma(audio_path, prompt)
+        wav_output = musicgen_model.generate_with_chroma(
+            melody_wavs=[wav_tensor],
+            melody_sample_rate=sr,
+            descriptions=[prompt]
+        )
         output_path = os.path.join("static", "generated_output.wav")
-        torchaudio.save(output_path, wav_output[0].unsqueeze(0), 32000)
+        # Handle both single tensor and list of tensors to avoid 'int' object not iterable error
+        if isinstance(wav_output, torch.Tensor):
+            wav_tensor = wav_output.unsqueeze(0)
+        elif isinstance(wav_output, list):
+            try:
+                wav_tensor = torch.stack([x if isinstance(x, torch.Tensor) else torch.tensor(x) for x in wav_output])
+            except Exception as e:
+                app.logger.error(f"❌ Failed to stack wav_output list: {e}")
+                return None
+        else:
+            app.logger.error(f"❌ Unexpected output format from MusicGen: {type(wav_output)}")
+            return None
+
+        torchaudio.save(output_path, wav_tensor, 32000)
         app.logger.debug(f"✅ Generated track saved to: {output_path}")
         return output_path
     except Exception as e:
@@ -109,7 +139,11 @@ def init_db():
             ''')
     conn.close()
 
-init_db()
+# Only init the DB if we have a DATABASE_URL
+if os.getenv('DATABASE_URL'):
+    init_db()
+else:
+    app.logger.warning("⚠️ DATABASE_URL not found. Skipping DB init for local testing.")
 
 # Helper function
 def allowed_file(filename):
@@ -215,5 +249,5 @@ def upload_history():
 
 # Run the app
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
