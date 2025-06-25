@@ -28,7 +28,7 @@ def upload_to_s3(file, filename):
     url = f"https://{os.getenv('S3_BUCKET_NAME')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{filename}"
     return url
 
-def generate_music(audio_path, genre, structure):
+def generate_music(audio_path, genre, structure, mode='audio2audio', text_prompt=None):
     """
     Generates music using MusicGen if running locally with AI dependencies.
     On the cloud (Render/etc.), skips AI generation.
@@ -36,6 +36,9 @@ def generate_music(audio_path, genre, structure):
     Two Modes:
     1. Local (USE_LOCAL_MUSICGEN=true): Runs AI music generation (requires audiocraft, torch, etc.)
     2. Cloud/Prod: Skips AI music generation, just returns None.
+
+    mode: 'audio2audio' or 'prompt2audio'
+    text_prompt: used if mode is 'prompt2audio'
     """
     # TEMP: Hardcoded override. Set to False when deploying to cloud.
     USE_LOCAL_MUSICGEN = True
@@ -55,6 +58,31 @@ def generate_music(audio_path, genre, structure):
             app.logger.error("❌ MusicGen/audiocraft not installed! Skipping music generation.")
             return None
 
+        if mode == "prompt2audio":
+            musicgen_model = MusicGen.get_pretrained("facebook/musicgen-small")
+            musicgen_model.set_generation_params(duration=30)
+            if not text_prompt:
+                app.logger.error("❌ No text prompt provided for prompt2audio mode.")
+                return None
+            app.logger.debug(f"🎛 Prompt2Audio Prompt: {text_prompt}")
+            wav_output = musicgen_model.generate(descriptions=[text_prompt])
+            output_path = os.path.join("static", "generated_output.wav")
+            if isinstance(wav_output, torch.Tensor):
+                wav_tensor = wav_output.unsqueeze(0)
+            elif isinstance(wav_output, list):
+                try:
+                    wav_tensor = torch.stack([x if isinstance(x, torch.Tensor) else torch.tensor(x) for x in wav_output])
+                except Exception as e:
+                    app.logger.error(f"❌ Failed to stack wav_output list: {e}")
+                    return None
+            else:
+                app.logger.error(f"❌ Unexpected output format from MusicGen: {type(wav_output)}")
+                return None
+            torchaudio.save(output_path, wav_tensor, 32000)
+            app.logger.debug(f"✅ Generated prompt2audio track saved to: {output_path}")
+            return output_path
+
+        # audio2audio mode
         # Convert m4a to wav using ffmpeg if needed
         if audio_path.endswith(".m4a"):
             converted_path = audio_path.replace(".m4a", "_converted.wav")
@@ -177,8 +205,14 @@ def upload_file():
             selected_genre = request.form.get('genre')
             selected_structure = request.form.get('structure')
 
+            # New form fields for mode and prompt
+            mode = request.form.get('mode')
+            if mode not in ['audio2audio', 'prompt2audio']:
+                mode = 'audio2audio'
+            text_prompt = request.form.get('text_prompt')
+
             # 🎶 Log or use this data however you like
-            app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}")
+            app.logger.debug(f"Genre: {selected_genre}, Structure: {selected_structure}, Mode: {mode}, Text Prompt: {text_prompt}")
             
             # Log torch device
             # device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
@@ -215,12 +249,13 @@ def upload_file():
                 app.logger.error(f"🧨 DB Error: {e}")
             
 
-            generated_path = generate_music(local_path, selected_genre, selected_structure)
+            generated_path = generate_music(local_path, selected_genre, selected_structure, mode=mode, text_prompt=text_prompt)
 
             return f'''
              File uploaded: {filename}<br>
              Genre: {selected_genre}<br>
              Structure: {selected_structure}<br>
+             Mode: {mode}<br>
              Original URL: <a href="{url}" target="_blank">{url}</a><br>
              Generated Track Preview: <audio controls><source src="/{generated_path}" type="audio/wav">Your browser does not support the audio element.</audio>
             '''
