@@ -1,6 +1,6 @@
 # SEED — AI Song Framework Generator
 
-Welcome to SEED, a web app that helps you grow full-length instrumentals from a single spark — like a musical seed.  
+Welcome to SEED, a web app that helps you grow full-length instrumentals from a single spark like a musical seed.  
 Upload your idea, choose your vibe, and SEED handles the rest.
 
 ## What It Does
